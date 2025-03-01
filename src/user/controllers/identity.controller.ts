@@ -8,9 +8,10 @@ import {
   Controller,
   Patch,
   Post,
-  Param
+  Param,
+  HttpStatus
 } from '@nestjs/common';
-import { ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
   CRUD_BASE_CONFIG,
@@ -19,6 +20,8 @@ import { Identity } from '../entities/identity.entity';
 import { IdentityService } from '../services/identity.service';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
 import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
+import { SwaggerBaseApiResponse } from '../../shared/dtos/base-api-response.dto';
+import { IdentityBalanceOutput, IdentityCreateOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
 
 @Crud({
   model: {
@@ -37,15 +40,33 @@ import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto'
 export class IdentityController implements CrudController<Identity> {
   constructor(public readonly service: IdentityService) {}
 
+  // Create
   @Post('create')
+  @ApiOperation({
+    summary: 'Create new identity',
+    description: 'This endpoint generates a new identity and returns the credentials for the new identity'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK, 
+    type: SwaggerBaseApiResponse(IdentityCreateOutput)
+  })
   async create() {
     return this.service.createIdentity();
   }
 
+  // Balance
   @Patch('balance/:accountId')
+  @ApiOperation({
+    summary: 'Get balance by Account ID',
+    description: 'This endpoint needs the Account ID in Hex format and returns the ICP balance of the specified account'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK, 
+    type: SwaggerBaseApiResponse(IdentityBalanceOutput)
+  })
   @ApiParam({
     name: 'accountId',
-    description: 'The unique identifier of the account',
+    description: 'The unique identifier of the account in Hex format',
     type: String
   })
   async getBalanceById(
@@ -55,17 +76,35 @@ export class IdentityController implements CrudController<Identity> {
     return this.service.getBalance(accountId, input)
   }
 
+  // Transfer
   @Post('transfer')
+  @ApiOperation({
+    summary: 'Post transfer ICP',
+    description: 'This endpoint needs the credentials of From and To identities in Hex format, the amount that we want to transfer and an optional memo and it transfers the ICP and returns the information of the transaction'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK, 
+    type: SwaggerBaseApiResponse(IdentityTransferOutput)
+  })
   async transfer(
     @Body() input: IdentityTransferInput,
   ) {
     return this.service.transfer(input);
   }
 
+  // History
   @Patch('history/:accountId')
+  @ApiOperation({
+    summary: 'Get history of transactions by Account ID',
+    description: 'This endpoint needs the Account ID in Hex format and returns the history of transactions for that account'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK, 
+    type: SwaggerBaseApiResponse(IdentityHistoryOutput)
+  })
   @ApiParam({
     name: 'accountId',
-    description: 'The identifier of the account that we want to see the history',
+    description: 'The unique identifier of the account in Hex format',
     type: String
   })
   async getHistoryById(

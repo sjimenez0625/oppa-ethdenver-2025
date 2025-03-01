@@ -15,6 +15,8 @@ import crc32 from 'crc-32';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
 import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
 import { Block } from '@dfinity/ledger-icp/dist/candid/ledger';
+import { BaseApiResponse } from '../../shared/dtos/base-api-response.dto';
+import { IdentityBalanceOutput, IdentityCreateOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
 
 @Injectable()
 export class IdentityService extends TypeOrmCrudService<Identity> {
@@ -67,7 +69,7 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
   }
 
   // Create Identity
-  async createIdentity(): Promise<Identity> {
+  async createIdentity(): Promise<BaseApiResponse<IdentityCreateOutput>> {
     const icpIdentity = Ed25519KeyIdentity.generate();
     const principal = icpIdentity .getPrincipal();
     const accountIdHex = this.principalToAccountId(principal);
@@ -78,19 +80,23 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
     identity.principal = principal.toText()
     identity.privateKey = Buffer.from(secretKey).toString('hex')
 
-    return this.repo.create(identity);
+    // this.repo.create(identity);
+
+    const responseData = {
+      accountId: accountIdHex,
+      principal: principal.toText(),
+      privateKey: Buffer.from(secretKey).toString('hex')
+    }
+
+    return {meta: {}, data: responseData}
   }
 
   // Balance
   async getBalance(
     accountId:string,
     req: IdentityPrivateKeyInput
-  ): Promise<string> {
+  ): Promise<BaseApiResponse<IdentityBalanceOutput>> {
     const { privKey } = req
-
-    if (!accountId || !privKey) {
-      return 'Missing required fields';
-    }
 
     const privateBytes = Buffer.from(privKey, 'hex');
     const identity = Ed25519KeyIdentity.fromSecretKey(privateBytes)
@@ -98,18 +104,18 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
     const ledgerActor = await this.createLedgerActor(identity);
     const balanceRes = await ledgerActor.accountBalance({ accountIdentifier: accountId })
 
-    return balanceRes.toString()
+    const responseData = {
+      balance: balanceRes.toString()
+    }
+
+    return {meta: {}, data: responseData}  
   }
 
   // Transfer
   async transfer(
     req:IdentityTransferInput
-  ): Promise<string> {
+  ): Promise<BaseApiResponse<IdentityTransferOutput>> {
     const { fromAccountId, fromPrivKey, toAccountId, amount, memo } = req; 
-
-    if (!fromAccountId || !fromPrivKey || !toAccountId || !amount) {
-      return 'Missing required fields';
-    }
 
     // Create identity
     const privateBytes = Buffer.from(fromPrivKey, 'hex');
@@ -154,22 +160,15 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       }
     };
 
-    // Serialize the response data
-    const serializedResponse = JSON.stringify(responseData);
-
-    return serializedResponse
+    return {meta: {}, data: responseData}
   }
 
   // History By Account ID
   async getHistory(
     accountId: string,
     req:IdentityPrivateKeyInput
-  ): Promise<string> {
+  ): Promise<BaseApiResponse<IdentityHistoryOutput>> {
     const { privKey } = req;
-
-    if (!accountId || !privKey) {
-      return 'Missing required fields';
-    }
 
     const privateBytes = Buffer.from(privKey, 'hex');
     const identity = Ed25519KeyIdentity.fromSecretKey(privateBytes)
@@ -184,7 +183,7 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       length: BigInt(length) // Max length
     });
 
-    const formattedData = history.blocks
+    const responseData = history.blocks
     .map((item: Block) => {
         const transferOp = item.transaction.operation[0];
 
@@ -208,7 +207,6 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       })
       .filter((item: undefined) => item !== undefined);
 
-    const serializedResponse = JSON.stringify(formattedData);
-    return serializedResponse;
+    return {meta: {}, data: responseData}
   }
 }
