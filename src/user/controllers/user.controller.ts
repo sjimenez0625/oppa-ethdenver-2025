@@ -1,6 +1,5 @@
 import {
   Crud,
-  CrudAuth,
   CrudController,
   CrudRequest,
   CrudRequestInterceptor,
@@ -31,12 +30,17 @@ import { UserService } from '../services/user.service';
   model: {
     type: User,
   },
+  ...CRUD_BASE_CONFIG,
   routes: {
     ...CRUD_BASE_CONFIG.routes,
   },
-})
-@CrudAuth({
-  property: 'user',
+  query: {
+    join: {
+      identity: {
+        eager: true,
+      },
+    },
+  },
 })
 @ApiTags('user')
 @Controller('user')

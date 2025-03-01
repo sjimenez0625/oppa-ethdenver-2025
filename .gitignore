@@ -404,3 +404,6 @@ terraform/.terraform.lock.hcl
 
 # Sentry Config File
 .sentryclirc
+
+# Mau Deploy Script
+scripts/deploy

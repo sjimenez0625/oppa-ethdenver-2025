@@ -38,6 +38,11 @@ export class Identity {
   @Column({ nullable: true, length: 100 })
   publicKey: string;
 
+  @ApiProperty()
+  @IsNotEmpty()
+  @Column({ nullable: false })
+  userId: string;
+
   @CreateDateColumn({
     name: 'createdAt',
     nullable: false,
@@ -56,5 +61,5 @@ export class Identity {
 
   @OneToOne(() => User, (user) => user.identity)
   @JoinColumn({ name: 'userId' })
-  user: User
+  user: User;
 }

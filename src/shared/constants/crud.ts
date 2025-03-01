@@ -1,4 +1,4 @@
-import { BaseRouteName } from '@dataui/crud';
+import { BaseRouteName, ParamsOptions } from '@dataui/crud';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 
 import { Roles } from '../../auth/decorators/role.decorator';
@@ -24,7 +24,11 @@ export const CRUD_BASE_CONFIG = {
       type: 'uuid',
       primary: true,
     },
-  },
+    userId: {
+      field: 'userId',
+      type: 'uuid',
+    },
+  } as ParamsOptions,
   routes: {
     getManyBase: {
       decorators: BASE_DECORATORS,

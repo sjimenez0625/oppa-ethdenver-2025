@@ -7,15 +7,17 @@ import { User } from '../entities/user.entity';
 
 @Injectable()
 export class UserService extends TypeOrmCrudService<User> {
-  constructor(
-    @InjectRepository(User) repository: Repository<User>,
-  ) {
+  constructor(@InjectRepository(User) repository: Repository<User>) {
     super(repository);
   }
 
-  async getUserById(userId: string): Promise<User | null> {
-    return this.repo.findOneBy({
-      id: userId,
+  async getUserById(
+    userId: string,
+    relations?: string[],
+  ): Promise<User | null> {
+    return this.repo.findOne({
+      relations,
+      where: { id: userId },
     });
   }
 
@@ -24,7 +26,6 @@ export class UserService extends TypeOrmCrudService<User> {
     partial: DeepPartial<User>,
   ): Promise<User> {
     await this.repo.update(userId, partial);
-
 
     return this.repo.findOneOrFail({
       where: { id: userId },

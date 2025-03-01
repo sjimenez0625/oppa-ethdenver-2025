@@ -1,21 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-} from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class IdentityTransferInput {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  fromAccountId: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  fromPrivKey: string;
-
   @ApiProperty()
   @IsNotEmpty()
   @IsString()
