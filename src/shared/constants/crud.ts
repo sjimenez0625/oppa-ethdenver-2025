@@ -1,12 +1,10 @@
 import { BaseRouteName } from '@dataui/crud';
-import { ClassSerializerInterceptor, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ClassSerializerInterceptor } from '@nestjs/common';
 
-import { Auth0Guard } from '../../auth/guards/auth0.guard';
 import { Roles } from '../../auth/decorators/role.decorator';
 import { ROLE } from '../../auth/constants/role.constant';
 
-export const BASE_DECORATORS = [UseGuards(Auth0Guard), ApiBearerAuth()];
+export const BASE_DECORATORS = [];
 export const BASE_INTERCEPTORS = [ClassSerializerInterceptor];
 export const BASE_ADMIN_DECORATORS = [...BASE_DECORATORS, Roles(ROLE.ADMIN)];
 export const CRUD_ALL_ROUTES: BaseRouteName[] = [

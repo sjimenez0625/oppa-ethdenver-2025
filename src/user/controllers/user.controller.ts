@@ -32,7 +32,6 @@ import { UserService } from '../services/user.service';
     type: User,
   },
   routes: {
-    only: ['getOneBase'],
     ...CRUD_BASE_CONFIG.routes,
   },
 })

@@ -9,54 +9,31 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('user')
-export class User {
+@Entity('identity')
+export class Identity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty()
   @IsNotEmpty()
+  @Unique('accountId', ['accountId'])
   @Column({ nullable: true, length: 100 })
-  firstname: string;
+  accountId: string;
 
-  @Column({ nullable: true, length: 100 })
-  lastname: string;
-
-  @Column({ nullable: true })
-  profilePicture: string;
-
-  @Column({ nullable: true })
-  password: string;
-
-  @Unique('username', ['username'])
-  @Column({ nullable: true, length: 200 })
-  username: string;
-
-  @ApiProperty({
-    type: "array",
-    items: {
-      type: 'string'
-    }
-  })
+  @ApiProperty()
   @IsNotEmpty()
-  @Column('simple-array')
-  roles: string[];
+  @Column({ nullable: true, length: 100 })
+  principal: string;
 
-  @Column({ default: false })
-  isAccountDisabled: boolean;
+  @ApiProperty()
+  @IsNotEmpty()
+  @Column({ nullable: true, length: 100 })
+  privateKey: string;
 
-  @Unique('email', ['email'])
-  @Column({ nullable: true, length: 200 })
-  email: string;
-
-  @Column({ nullable: false, default: 'local' })
-  authId: string;
-
-  @Column({ nullable: true })
-  bio: string;
-
-  @Column({ nullable: true })
-  dob: Date;
+  @ApiProperty()
+  @IsNotEmpty()
+  @Column({ nullable: true, length: 100 })
+  publicKey: string;
 
   @CreateDateColumn({
     name: 'createdAt',

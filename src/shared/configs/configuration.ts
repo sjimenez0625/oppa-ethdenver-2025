@@ -17,4 +17,10 @@ export default (): any => ({
     password: process.env.REDIS_PASSWORD,
     namespace: process.env.REDIS_NAMESPACE,
   },
+  icp: {
+    host: process.env.ICP_LEDGER_HOST,
+    env: process.env.ICP_LEDGER_ENV,
+    port: process.env.ICP_LEDGER_PORT,
+    canisterId: process.env.ICP_LEDGER_CANISTER_ID
+  }
 });

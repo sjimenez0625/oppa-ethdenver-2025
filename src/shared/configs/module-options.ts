@@ -16,5 +16,9 @@ export const configModuleOptions: ConfigModuleOptions = {
     DB_NAME: Joi.string().required(),
     DB_USER: Joi.string().required(),
     DB_PASS: Joi.string().required(),
+    ICP_LEDGER_HOST: Joi.string().required(),
+    ICP_LEDGER_ENV: Joi.string().optional(),
+    ICP_LEDGER_PORT: Joi.number().optional(),
+    ICP_LEDGER_CANISTER_ID: Joi.string().required(),
   }),
 };
