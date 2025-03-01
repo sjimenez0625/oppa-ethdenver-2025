@@ -1,180 +1,111 @@
-## NestJS Starter Kit [v2]
+# OPPA ICP Dev Account Controller
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![build](https://github.com/monstar-lab-oss/nestjs-starter-rest-api/actions/workflows/build-workflow.yml/badge.svg?branch=master&event=push)](https://github.com/monstar-lab-oss/nestjs-starter-rest-api/actions/workflows/build-workflow.yml)
-[![tests](https://github.com/monstar-lab-oss/nestjs-starter-rest-api/actions/workflows/tests-workflow.yml/badge.svg?branch=master&event=push)](https://github.com/monstar-lab-oss/nestjs-starter-rest-api/actions/workflows/tests-workflow.yml)
+## Overview
+OPPA ICP Dev Account Controller is a Web3-based service designed to facilitate the seamless creation and management of users and Internet Computer Protocol (ICP) wallets. The platform provides a secure and scalable solution for handling digital identities and financial transactions within the ICP ecosystem. 
 
-This starter kit has the following outline:
+The system enables users to create ICP wallets, manage their balances, and conduct transactions both internally (between users in the system) and externally (with wallets outside the system). Additionally, it includes webhook support to monitor and track real-time account activities, providing integrations for automated processes and notifications. 
 
-- Monolithic Project
-- REST API
+Built with a focus on security and ease of integration, OPPA ICP Dev Account Controller offers a robust API that allows developers to integrate decentralized financial operations into their applications. Whether managing identities, performing ICP transactions, or automating workflows via webhooks, the platform ensures a smooth and reliable experience for Web3 applications.
 
-This is a Github Template Repository, so it can be easily [used as a starter template](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for other repositories.
+## Features
+- **User Management:** Create and manage user accounts.
+- **ICP Wallet Creation:** Generate ICP wallets for users.
+- **Funds Transfers:** Transfer ICP tokens between internal wallets and external ICP addresses.
+- **Webhook Management:** Configure webhooks to track events.
+- **Secure API Access:** Authentication and authorization mechanisms for secure interactions.
+- **Transaction History:** Retrieve transaction logs to ensure transparency and track user activity.
+- **Scalable Infrastructure:** Designed to support a high number of concurrent transactions with optimized performance.
 
-## Sample implementations
+## API Documentation
+The API is documented using Swagger and can be accessed here:
+[ICP Dev Account Controller Swagger](https://account-control.icp.ommacash.com/swagger)
 
-To view sample implementations based on this starter kit, please visit the [nestjs-sample-solutions](https://github.com/monstar-lab-oss/nestjs-sample-solutions) repository.
+## Getting Started
+### Prerequisites
+Ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (Recommended LTS version)
+- [Docker](https://www.docker.com/) (Optional, for containerized deployment)
+- A Web3-compatible wallet for testing ICP transactions
 
-## Starter kit Features
+### Installation
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/sjimenez0625/oppa-ethdenver-2025.git
+   cd oppa-ethdenver-2025
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Set up environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in required configuration values (e.g., database connection, blockchain API keys)
 
-One of our main principals has been to keep the starter kit as lightweight as possible. With that in mind, here are some of the features that we have added in this starter kit.
-
-| Feature                  | Info               | Progress |
-|--------------------------|--------------------|----------|
-| Authentication           | JWT                | Done     |
-| Authorization            | RBAC (Role based)  | Done     |
-| ORM Integration          | TypeORM            | Done     |
-| DB Migrations            | TypeORM            | Done     |
-| Logging                  | winston            | Done     |
-| Request Validation       | class-validator    | Done     |
-| Pagination               | SQL offset & limit | Done     |
-| Docker Ready             | Dockerfile         | Done     |
-| Devcontainer             | -                  | Done     |
-| Auto-generated OpenAPI   | -                  | Done     |
-| Auto-generated ChangeLog | -                  | WIP      |
-
-Apart from these features above, our start-kit comes loaded with a bunch of minor awesomeness like prettier integration, commit-linting husky hooks, package import sorting, SonarCloud github actions, docker-compose for database dependencies, etc. :D
-
-## Consulting
-
-Most of the features added to this starter kit have already been tried out in production applications by us here at MonstarLab. Our production applications are more feature rich, and we constantly strive to bring those features to this OSS starter kit.
-
-If you would like to use a more feature rich starter kit, with more awesome features from Day 1, then please reach out to us and we can collaborate on it together as technology partners. :)
-
-## Installation
-
-Note: when using docker, all the `npm` commands can also be performed using `./scripts/npm` (for example `./scripts/npm install`).
-This script allows you to run the same commands inside the same environment and versions than the service, without relying on what is installed on the host.
-
-```bash
-$ npm install
+### Running the Application
+#### Development Mode
+```sh
+npm run dev
+```
+#### Production Mode
+```sh
+npm run start
 ```
 
-Create a `.env` file from the template `.env.template` file.
+## API Endpoints
+### General
+- **`GET /api/v1/health`** - Check system health.
+- **`GET /api/v1/error`** - Debugging endpoint that throws an error.
 
-Generate public and private key pair for jwt authentication:
+### User Management
+- **`GET /api/v1/user/me`** - Retrieve authenticated user info.
+- **`PATCH /api/v1/user/me`** - Update authenticated user profile.
+- **`GET /api/v1/user/{id}`** - Retrieve a specific user by ID.
+- **`PATCH /api/v1/user/{id}`** - Partially update a user.
+- **`PUT /api/v1/user/{id}`** - Replace a user.
+- **`DELETE /api/v1/user/{id}`** - Delete a user.
+- **`GET /api/v1/user`** - Retrieve multiple users.
+- **`POST /api/v1/user`** - Create a new user.
+- **`POST /api/v1/user/bulk`** - Create multiple users in bulk.
 
-### With docker
+### ICP Wallet (Identity) Management
+- **`POST /api/v1/user/{userId}/identity`** - Create a Web3 identity for a user.
+- **`GET /api/v1/user/{userId}/identity/{id}`** - Retrieve an identity.
+- **`POST /api/v1/user/{userId}/identity/balance`** - Retrieve ICP wallet balance.
+- **`POST /api/v1/user/{userId}/identity/transfer`** - Transfer ICP tokens between wallets.
+- **`POST /api/v1/user/{userId}/identity/history`** - Retrieve ICP wallet transaction history.
 
-Run this command:
-```bash
-./scripts/generate-jwt-keys
+### Webhook Management
+- **`GET /api/v1/webhook/{id}`** - Retrieve a specific webhook.
+- **`PATCH /api/v1/webhook/{id}`** - Update a webhook.
+- **`PUT /api/v1/webhook/{id}`** - Replace a webhook.
+- **`DELETE /api/v1/webhook/{id}`** - Delete a webhook.
+- **`GET /api/v1/webhook`** - Retrieve multiple webhooks.
+- **`POST /api/v1/webhook`** - Create a new webhook.
+- **`POST /api/v1/webhook/bulk`** - Create multiple webhooks in bulk.
+
+### Webhook Log Management
+- **`GET /api/v1/webhook_log/{id}`** - Retrieve a specific webhook log.
+- **`PATCH /api/v1/webhook_log/{id}`** - Update a webhook log.
+- **`PUT /api/v1/webhook_log/{id}`** - Replace a webhook log.
+- **`DELETE /api/v1/webhook_log/{id}`** - Delete a webhook log.
+- **`GET /api/v1/webhook_log`** - Retrieve multiple webhook logs.
+- **`POST /api/v1/webhook_log`** - Create a webhook log.
+- **`POST /api/v1/webhook_log/bulk`** - Create multiple webhook logs.
+
+### ICP Transfers
+- **`GET /api/v1/transfer/{id}`** - Retrieve details of a specific transfer.
+
+## Deployment
+### Docker (Optional)
+To deploy using Docker, build and run the container:
+```sh
+docker build -t oppa-icp-dev-account-controller .
+docker run -p 3000:3000 oppa-icp-dev-account-controller
 ```
 
-It will output something like this. You only need to add it to your `.env` file.
-```
-To setup the JWT keys, please add the following values to your .env file:
-JWT_PUBLIC_KEY_BASE64="(long base64 content)"
-JWT_PRIVATE_KEY_BASE64="(long base64 content)"
-```
+## Contact
+For inquiries or support, contact:
+- [sergio@ommacash.com](mailto:sergio@ommacash.com)
+- [victor@ommacash.com](mailto:victor@ommacash.com)
+- [isracts@ommacash.com](mailto:isracts@ommacash.com)
 
-### Without docker
-
-```bash
-$ ssh-keygen -t rsa -b 2048 -m PEM -f jwtRS256.key
-# Don't add passphrase
-$ openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
-```
-
-You may save these key files in `./local` directory as it is ignored in git.
-
-Encode keys to base64:
-
-```bash
-$ base64 -i local/jwtRS256.key
-
-$ base64 -i local/jwtRS256.key.pub
-```
-
-Must enter the base64 of the key files in `.env`:
-
-```bash
-JWT_PUBLIC_KEY_BASE64=BASE64_OF_JWT_PUBLIC_KEY
-JWT_PRIVATE_KEY_BASE64=BASE64_OF_JWT_PRIVATE_KEY
-```
-
-## Running the app
-
-We can run the project with or without docker.
-
-### Local
-
-To run the server without Docker we need this pre-requisite:
-
-- Postgres server running
-
-Commands:
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-### Docker
-
-```bash
-# build image
-$ docker build -t my-app .
-
-# run container from image
-$ docker run -p 3000:3000 --volume 'pwd':/usr/src/app --network --env-file .env my-app
-
-# run using docker compose
-$ docker compose up
-```
-
-Learn more about Docker conventions [here](https://github.com/monstar-lab-group/nodejs-backend/blob/master/architecture/docker-ready.md). (WIP - Currently this is an internal org link.)
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Migrations
-
-```bash
-# using docker
-$ docker compose exec app npm run migration:run
-
-# generate migration (replace CreateUsers with name of the migration)
-$ npm run migration:generate --name=CreateUsers
-
-# run migration
-$ npm run migration:run
-
-# revert migration
-$ npm run migration:revert
-```
-
-## Architecture
-
-- [Project Structure](./docs/project-structure.md)
-
-## Contributors
-
-- [Yash Murty](https://github.com/yashmurty)
-- [S M Asad Rahman](https://github.com/asad-mlbd)
-- [Tanveer Hassan](https://github.com/war1oc)
-- [Saad Bin Amjad](https://github.com/Saad-Amjad)
-- [Sivan Payyadakath](https://github.com/sivanpayyadakath)
-- [Sébastien Caparros](https://github.com/Seb-C)
-
-## External Links
-
-<a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo.svg" width="150" alt="Nest Logo" /></a>
-
-[![SonarCloud](https://sonarcloud.io/images/project_badges/sonarcloud-white.svg)](https://sonarcloud.io/dashboard?id=monstar-lab-oss_nestjs-starter-rest-api)
