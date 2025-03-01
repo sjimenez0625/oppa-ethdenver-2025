@@ -2,31 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
 
 import { configModuleOptions } from './configs/module-options';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 import { AppLoggerModule } from './logger/logger.module';
-import { CacheService } from './services/cache.service';
 
 @Module({
   imports: [
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        namespace: configService.get('redis.namespace'),
-        stores: [
-          await redisStore({
-            url: configService.get('redis.url'),
-            password: configService.get('redis.password'),
-          }),
-        ],
-      }),
-      inject: [ConfigService],
-    }),
     ConfigModule.forRoot(configModuleOptions),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -48,7 +31,7 @@ import { CacheService } from './services/cache.service';
     }),
     AppLoggerModule,
   ],
-  exports: [AppLoggerModule, ConfigModule, CacheService],
+  exports: [AppLoggerModule, ConfigModule],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
 
@@ -56,7 +39,6 @@ import { CacheService } from './services/cache.service';
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
-    CacheService,
   ],
 })
 export class SharedModule {}

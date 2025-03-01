@@ -47,9 +47,6 @@ export class User {
   @Column({ nullable: true })
   dob: Date;
 
-  @Column({ nullable: false, default: false })
-  isMusician: boolean;
-
   @CreateDateColumn({
     name: 'createdAt',
     nullable: false,

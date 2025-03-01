@@ -4,14 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { DeepPartial, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { CacheService } from '../../shared/services/cache.service';
-import { CACHE_KEY } from '../../shared/constants/cache';
 
 @Injectable()
 export class UserService extends TypeOrmCrudService<User> {
   constructor(
     @InjectRepository(User) repository: Repository<User>,
-    private readonly cacheService: CacheService,
   ) {
     super(repository);
   }
@@ -25,13 +22,9 @@ export class UserService extends TypeOrmCrudService<User> {
   async patchUserById(
     userId: string,
     partial: DeepPartial<User>,
-    clearCache: boolean = false,
   ): Promise<User> {
     await this.repo.update(userId, partial);
 
-    if (clearCache) {
-      await this.cacheService.del(CACHE_KEY.USER, { id: userId });
-    }
 
     return this.repo.findOneOrFail({
       where: { id: userId },

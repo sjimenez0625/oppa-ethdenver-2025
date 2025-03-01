@@ -1,5 +1,3 @@
-import './shared/instrumentation/sentry';
-import 'newrelic';
 import './shared/configs/crud';
 
 import { ValidationPipe } from '@nestjs/common';

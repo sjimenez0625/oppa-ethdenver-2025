@@ -6,12 +6,11 @@ import { SharedModule } from '../shared/shared.module';
 import { UserController } from './controllers/user.controller';
 import { User } from './entities/user.entity';
 import { UserService } from './services/user.service';
-import { UserCacheService } from './services/user-cache.service';
 
 @Module({
   imports: [SharedModule, TypeOrmModule.forFeature([User])],
-  providers: [Auth0Strategy, UserService, UserCacheService],
+  providers: [Auth0Strategy, UserService],
   controllers: [UserController],
-  exports: [UserService, UserCacheService],
+  exports: [UserService],
 })
 export class UserModule {}
