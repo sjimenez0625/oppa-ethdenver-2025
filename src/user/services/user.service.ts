@@ -4,10 +4,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 import { DeepPartial, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
+import { Identity } from '../entities/identity.entity';
 
 @Injectable()
 export class UserService extends TypeOrmCrudService<User> {
-  constructor(@InjectRepository(User) repository: Repository<User>) {
+  constructor(
+    @InjectRepository(User) repository: Repository<User>,
+    @InjectRepository(Identity)
+    private readonly identityRepository: Repository<Identity>,
+  ) {
     super(repository);
   }
 
@@ -18,6 +23,12 @@ export class UserService extends TypeOrmCrudService<User> {
     return this.repo.findOne({
       relations,
       where: { id: userId },
+    });
+  }
+
+  async getIdentityByAccountId(accountId: string): Promise<Identity | null> {
+    return this.identityRepository.findOne({
+      where: { accountId: accountId },
     });
   }
 

@@ -17,25 +17,49 @@ import { Buffer } from 'node:buffer';
 import crypto from 'crypto';
 import crc32 from 'crc-32';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
-import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
-import { Block } from '@dfinity/ledger-icp/dist/candid/ledger';
 import {
+  BlockDTO,
   IdentityBalanceOutput,
+  IdentityBlockOutput,
   IdentityHistoryOutput,
   IdentityTransferOutput,
 } from '../dtos/identity-output.dto';
 import { UserService } from './user.service';
 import { plainToClass } from 'class-transformer';
 import { User } from '../entities/user.entity';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { Transfer } from '../../transfer/entities/transfer.entity';
+import { TRANSFER_STATUS } from '../../transfer/constants/transfer.constant';
+import { WebhookService } from '../../webhook/services/webhook.service';
 
 @Injectable()
 export class IdentityService extends TypeOrmCrudService<Identity> {
+  private static readonly baseAccountUrl: string =
+    'https://ledger-api.internetcomputer.org/accounts/';
+
   constructor(
     private userService: UserService,
+    private webhookService: WebhookService,
     private configService: ConfigService,
+    private readonly httpService: HttpService,
     @InjectRepository(Identity) repository: Repository<Identity>,
+    @InjectRepository(Transfer)
+    private readonly transferRepository: Repository<Transfer>,
   ) {
     super(repository);
+  }
+
+  async getIdentityByAccountId(accountId: string): Promise<Identity | null> {
+    return this.repo.findOne({
+      where: { accountId: accountId },
+    });
+  }
+
+  async getBalanceFormat(balance: string, to: string | null): Promise<string> {
+    const balanceFormated = parseFloat(balance);
+    const res = to === 'normal' ? balanceFormated / 1e8 : balanceFormated * 1e8;
+    return res.toString();
   }
 
   getCrc32(buffer: Buffer) {
@@ -108,14 +132,7 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
   }
 
   // Balance
-  async getBalance(
-    userId: string,
-    req: IdentityPrivateKeyInput,
-  ): Promise<IdentityBalanceOutput> {
-    const { privKey } = req;
-    const privateBytes = Buffer.from(privKey, 'hex');
-    const identity = Ed25519KeyIdentity.fromSecretKey(privateBytes);
-
+  async getBalance(userId: string): Promise<IdentityBalanceOutput> {
     const userIdentity = await this.repo.findOne({
       where: { userId },
     });
@@ -124,16 +141,51 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       throw new Error('Identity not found');
     }
 
-    const ledgerActor = await this.createLedgerActor(identity);
-    const balanceRes = await ledgerActor.accountBalance({
-      accountIdentifier: userIdentity.accountId,
-    });
+    const url = `${IdentityService.baseAccountUrl}${userIdentity.accountId}`;
+    const res = await firstValueFrom(this.httpService.get(url));
 
     const responseData = {
-      balance: balanceRes.toString(),
+      balance: await this.getBalanceFormat(res.data.balance, 'normal'),
     };
 
     return responseData;
+  }
+
+  async createTransferRecord(
+    userId: string,
+    transfer: IdentityTransferOutput,
+  ): Promise<void> {
+    const user = await this.userService.getUserById(userId, ['identity']);
+    const transferEntity = new Transfer();
+
+    transferEntity.txHash = transfer.transactionHash;
+    transferEntity.status = TRANSFER_STATUS.COMPLETED;
+    transferEntity.user = plainToClass(User, user);
+    this.transferRepository.save(transferEntity);
+  }
+
+  async getTransferInfo(
+    transfer: IdentityTransferOutput,
+  ): Promise<IdentityTransferOutput> {
+    const fromAccountId = transfer.from.accountId;
+    const blockId = transfer.block;
+    const url = `${IdentityService.baseAccountUrl}${fromAccountId}/transactions`;
+
+    const res = await firstValueFrom(this.httpService.get(url));
+
+    const block = res.data.blocks.find(
+      (block: IdentityBlockOutput) => block.block_height === blockId,
+    );
+
+    transfer.blockHash = block.block_hash;
+    transfer.parentHash = block.parent_hash;
+    transfer.transactionHash = block.transaction_hash;
+    transfer.amount = await this.getBalanceFormat(block.amount, 'normal');
+    transfer.fee = await this.getBalanceFormat(block.fee, 'normal');
+
+    this.webhookService.sendTransferWebhook(block, 'webhook');
+
+    return transfer;
   }
 
   // Transfer
@@ -162,7 +214,9 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
     const toAccount = AccountIdentifier.fromHex(toAccountId);
 
     // Convert data
-    const amountValue = BigInt(amount);
+    const amountTemp = await this.getBalanceFormat(amount.toString(), null);
+
+    const amountValue = BigInt(parseInt(amountTemp));
     const memoValue = memo ? BigInt(memo) : BigInt(0);
 
     // Set up the transfer request
@@ -177,7 +231,7 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
 
     // Transfer
     try {
-      const response = await ledger.transfer(transferRequest);
+      const transaction = await ledger.transfer(transferRequest);
 
       // Balances
       const balanceTo = await ledger.accountBalance({
@@ -190,32 +244,34 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
 
       const responseData = {
         message:
-          'Transfer successfully sent at block heigh ' + response.toString(),
-        block: response.toString(),
-        created_date_time: currentDateTime.toUTCString(),
+          'Transfer successfully sent at block heigh ' + transaction.toString(),
+        block: transaction.toString(),
+        blockHash: '',
+        parentHash: '',
+        transactionHash: '',
+        amount: '',
+        fee: '',
+        createdDateTime: currentDateTime.toUTCString(),
         from: {
-          account_id: fromAccountId,
-          balance: balanceFrom.toString(),
+          accountId: fromAccountId,
+          balance: await this.getBalanceFormat(
+            balanceFrom.toString(),
+            'normal',
+          ),
         },
         to: {
-          account_id: toAccountId,
-          balance: balanceTo.toString(),
+          accountId: toAccountId,
+          balance: await this.getBalanceFormat(balanceTo.toString(), 'normal'),
         },
       };
-
       return responseData;
     } catch (error: any) {
       throw new Error('Transfer failed ' + error.message);
     }
   }
 
-  // History By Account ID
-  async getHistory(
-    userId: string,
-    req: IdentityPrivateKeyInput,
-  ): Promise<IdentityHistoryOutput> {
-    const { privKey } = req;
-
+  // History By User ID
+  async getHistory(userId: string): Promise<IdentityHistoryOutput> {
     const userIdentity = await this.repo.findOne({
       where: { userId },
     });
@@ -226,45 +282,17 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
 
     const accountId = userIdentity.accountId;
 
-    const privateBytes = Buffer.from(privKey, 'hex');
-    const identity = Ed25519KeyIdentity.fromSecretKey(privateBytes);
+    const url = `https://ledger-api.internetcomputer.org/accounts/${accountId}/transactions`;
+    const res = await firstValueFrom(this.httpService.get(url));
 
-    const ledgerActor = await this.createLedgerActor(identity);
-
-    const start = 0; // Initial index of history
-    const length = 2 ** 63; // Max length of history
-
-    const history = await (ledgerActor as any).service.query_blocks({
-      start: BigInt(start), // Initial value
-      length: BigInt(length), // Max length
+    const blocks = res.data.blocks.map((block: BlockDTO) => {
+      return {
+        ...block,
+        amount: parseInt(block.amount.toString(), 10) / 1e8,
+        fee: parseInt(block.fee.toString(), 10) / 1e8,
+      };
     });
 
-    const responseData = history.blocks
-      .map((item: Block) => {
-        const transferOp = item.transaction.operation[0];
-
-        if (transferOp && 'Transfer' in transferOp) {
-          const { to, fee, from, amount } = transferOp.Transfer;
-
-          const fromValue = from ? Buffer.from(from).toString('hex') : null;
-          const toValue = to ? Buffer.from(to).toString('hex') : null;
-
-          if (fromValue === accountId || toValue === accountId) {
-            return {
-              from: fromValue,
-              to: toValue,
-              amount: amount.e8s.toString() || null,
-              fee: fee.e8s.toString() || null,
-              memo: item.transaction.memo?.toString() || null,
-              created_at_time:
-                item.transaction.created_at_time?.timestamp_nanos?.toString() ||
-                null,
-            };
-          }
-        }
-      })
-      .filter((item: undefined) => item !== undefined);
-
-    return responseData;
+    return blocks;
   }
 }

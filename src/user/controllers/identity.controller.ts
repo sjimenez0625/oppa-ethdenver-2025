@@ -14,7 +14,6 @@ import { CRUD_BASE_CONFIG } from '../../shared/constants/crud';
 import { Identity } from '../entities/identity.entity';
 import { IdentityService } from '../services/identity.service';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
-import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
 import {
   IdentityBalanceOutput,
   IdentityHistoryOutput,
@@ -69,15 +68,12 @@ export class IdentityController implements CrudController<Identity> {
     type: IdentityBalanceOutput,
   })
   @ApiParam({
-    name: 'accountId',
-    description: 'The unique identifier of the account in Hex format',
+    name: 'userId',
+    description: 'The unique identifier of the User',
     type: String,
   })
-  async getBalanceById(
-    @Param('userId') userId: string,
-    @Body() input: IdentityPrivateKeyInput,
-  ) {
-    return this.service.getBalance(userId, input);
+  async getBalanceById(@Param('userId') userId: string) {
+    return this.service.getBalance(userId);
   }
 
   // Transfer
@@ -95,7 +91,11 @@ export class IdentityController implements CrudController<Identity> {
     @Param('userId') userId: string,
     @Body() input: IdentityTransferInput,
   ) {
-    return this.service.transfer(userId, input);
+    const transfer = await this.service.transfer(userId, input);
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    const transferFinal = await this.service.getTransferInfo(transfer);
+    this.service.createTransferRecord(userId, transferFinal);
+    return transferFinal;
   }
 
   // History
@@ -109,10 +109,7 @@ export class IdentityController implements CrudController<Identity> {
     status: HttpStatus.OK,
     type: IdentityHistoryOutput,
   })
-  async getHistoryById(
-    @Param('userId') userId: string,
-    @Body() input: IdentityPrivateKeyInput,
-  ) {
-    return this.service.getHistory(userId, input);
+  async getHistoryById(@Param('userId') userId: string) {
+    return this.service.getHistory(userId);
   }
 }

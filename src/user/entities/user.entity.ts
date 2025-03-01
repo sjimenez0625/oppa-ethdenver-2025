@@ -4,12 +4,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { Identity } from './identity.entity';
+import { Transfer } from '../../transfer/entities/transfer.entity';
 
 @Entity('user')
 export class User {
@@ -35,10 +37,10 @@ export class User {
   username: string;
 
   @ApiProperty({
-    type: "array",
+    type: 'array',
     items: {
-      type: 'string'
-    }
+      type: 'string',
+    },
   })
   @IsNotEmpty()
   @Column('simple-array')
@@ -77,5 +79,8 @@ export class User {
   updatedAt: Date;
 
   @OneToOne(() => Identity, (identity) => identity.user, { cascade: true })
-  identity: Identity
+  identity: Identity;
+
+  @OneToMany(() => Transfer, (transfer) => transfer.user)
+  transfers: Transfer[];
 }
