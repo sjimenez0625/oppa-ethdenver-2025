@@ -15,14 +15,18 @@ import crc32 from 'crc-32';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
 import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
 import { Block } from '@dfinity/ledger-icp/dist/candid/ledger';
-import { BaseApiResponse } from '../../shared/dtos/base-api-response.dto';
-import { IdentityBalanceOutput, IdentityCreateOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
+import { IdentityBalanceOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
+import { UserService } from './user.service';
+import { plainToClass } from 'class-transformer';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class IdentityService extends TypeOrmCrudService<Identity> {
   constructor(
+    private userService: UserService,
     private configService: ConfigService,
-    @InjectRepository(Identity) repository: Repository<Identity>,
+    @InjectRepository(Identity) repository: Repository<Identity>
+    
   ) {
     super(repository);
   }
@@ -69,35 +73,34 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
   }
 
   // Create Identity
-  async createIdentity(): Promise<BaseApiResponse<IdentityCreateOutput>> {
+  async createIdentity(
+    userId: string
+  ): Promise<Identity> {
+
+    const user = await this.userService.getUserById(userId);
+
     const icpIdentity = Ed25519KeyIdentity.generate();
+    const identity = new Identity
+
     const principal = icpIdentity .getPrincipal();
     const accountIdHex = this.principalToAccountId(principal);
-    const secretKey = icpIdentity.getKeyPair().secretKey;
-
-    const identity = new Identity
+    const {secretKey, publicKey} = icpIdentity.getKeyPair();
+    
     identity.accountId = accountIdHex
     identity.principal = principal.toText()
     identity.privateKey = Buffer.from(secretKey).toString('hex')
+    identity.publicKey = Buffer.from(publicKey.toDer()).toString('hex')
+    identity.user = plainToClass(User, user)
 
-    // this.repo.create(identity);
-
-    const responseData = {
-      accountId: accountIdHex,
-      principal: principal.toText(),
-      privateKey: Buffer.from(secretKey).toString('hex')
-    }
-
-    return {meta: {}, data: responseData}
+    return await this.repo.save(identity)
   }
 
   // Balance
   async getBalance(
     accountId:string,
     req: IdentityPrivateKeyInput
-  ): Promise<BaseApiResponse<IdentityBalanceOutput>> {
+  ): Promise<IdentityBalanceOutput> {
     const { privKey } = req
-
     const privateBytes = Buffer.from(privKey, 'hex');
     const identity = Ed25519KeyIdentity.fromSecretKey(privateBytes)
 
@@ -108,13 +111,13 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       balance: balanceRes.toString()
     }
 
-    return {meta: {}, data: responseData}  
+    return responseData
   }
 
   // Transfer
   async transfer(
     req:IdentityTransferInput
-  ): Promise<BaseApiResponse<IdentityTransferOutput>> {
+  ): Promise<IdentityTransferOutput> {
     const { fromAccountId, fromPrivKey, toAccountId, amount, memo } = req; 
 
     // Create identity
@@ -160,14 +163,14 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       }
     };
 
-    return {meta: {}, data: responseData}
+    return responseData
   }
 
   // History By Account ID
   async getHistory(
     accountId: string,
     req:IdentityPrivateKeyInput
-  ): Promise<BaseApiResponse<IdentityHistoryOutput>> {
+  ): Promise<IdentityHistoryOutput> {
     const { privKey } = req;
 
     const privateBytes = Buffer.from(privKey, 'hex');
@@ -207,6 +210,6 @@ export class IdentityService extends TypeOrmCrudService<Identity> {
       })
       .filter((item: undefined) => item !== undefined);
 
-    return {meta: {}, data: responseData}
+    return responseData
   }
 }

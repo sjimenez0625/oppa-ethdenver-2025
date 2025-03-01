@@ -20,8 +20,7 @@ import { Identity } from '../entities/identity.entity';
 import { IdentityService } from '../services/identity.service';
 import { IdentityTransferInput } from '../dtos/identity-transfer-input.dto';
 import { IdentityPrivateKeyInput } from '../dtos/identity-private-key-input.dto';
-import { SwaggerBaseApiResponse } from '../../shared/dtos/base-api-response.dto';
-import { IdentityBalanceOutput, IdentityCreateOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
+import { IdentityBalanceOutput, IdentityHistoryOutput, IdentityTransferOutput } from '../dtos/identity-output.dto';
 
 @Crud({
   model: {
@@ -41,17 +40,24 @@ export class IdentityController implements CrudController<Identity> {
   constructor(public readonly service: IdentityService) {}
 
   // Create
-  @Post('create')
+  @Post('create/:userId')
   @ApiOperation({
     summary: 'Create new identity',
     description: 'This endpoint generates a new identity and returns the credentials for the new identity'
   })
   @ApiResponse({
-    status: HttpStatus.OK, 
-    type: SwaggerBaseApiResponse(IdentityCreateOutput)
+    status: HttpStatus.OK,
+    type: Identity
   })
-  async create() {
-    return this.service.createIdentity();
+  @ApiParam({
+    name: 'userId',
+    description: 'The unique identifier of the user',
+    type: String
+  })
+  async create(
+    @Param('userId') userId: string,
+  ) {
+    return this.service.createIdentity(userId);
   }
 
   // Balance
@@ -62,7 +68,7 @@ export class IdentityController implements CrudController<Identity> {
   })
   @ApiResponse({
     status: HttpStatus.OK, 
-    type: SwaggerBaseApiResponse(IdentityBalanceOutput)
+    type: IdentityBalanceOutput
   })
   @ApiParam({
     name: 'accountId',
@@ -84,7 +90,7 @@ export class IdentityController implements CrudController<Identity> {
   })
   @ApiResponse({
     status: HttpStatus.OK, 
-    type: SwaggerBaseApiResponse(IdentityTransferOutput)
+    type: IdentityTransferOutput
   })
   async transfer(
     @Body() input: IdentityTransferInput,
@@ -100,7 +106,7 @@ export class IdentityController implements CrudController<Identity> {
   })
   @ApiResponse({
     status: HttpStatus.OK, 
-    type: SwaggerBaseApiResponse(IdentityHistoryOutput)
+    type: IdentityHistoryOutput
   })
   @ApiParam({
     name: 'accountId',

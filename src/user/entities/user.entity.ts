@@ -4,10 +4,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
+import { Identity } from './identity.entity';
 
 @Entity('user')
 export class User {
@@ -73,4 +75,7 @@ export class User {
     default: () => 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @OneToOne(() => Identity, (identity) => identity.user, { cascade: true })
+  identity: Identity
 }
